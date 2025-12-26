@@ -1,32 +1,44 @@
-pragma solidity >=0.4.22 <0.9.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./MultiSigWallet.sol";
+interface IERC20 {
+    function transfer(address recipient, uint256 amount) external returns (bool);
+}
 
-contract MyToken is ERC20 {
-    address private _owner;
-    MultiSigWallet private _multiSigWallet;
+contract MultiSigWalletERC20 {
+    uint256 public requiredSignatures;
+    address[] public signers;
+    mapping(address => bool) public isSigner;
+    mapping(address => mapping(bytes32 => bool)) public confirmations;
 
-    constructor(string memory name, string memory symbol, uint256 initialSupply, address owner, address walletAddress) ERC20(name, symbol) {
-        _owner = owner;
-        _multiSigWallet = MultiSigWallet(walletAddress);
-        _mint(owner, initialSupply);
+    constructor(address[] memory _signers, uint256 _requiredSignatures) {
+        require(_signers.length >= _requiredSignatures, "Invalid signer count");
+        signers = _signers;
+        requiredSignatures = _requiredSignatures;
+        for (uint i = 0; i < _signers.length; i++) {
+            isSigner[_signers[i]] = true;
+        }
     }
 
-    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
-        require(recipient != address(_multiSigWallet), "Transfer to the multisig wallet is not allowed");
-        super.transfer(recipient, amount);
-        return true;
+    modifier onlySigner() {
+        require(isSigner[msg.sender], "Not a signer");
+        _;
     }
 
-    function sendToMultiSigWallet(address wallet, uint256 amount) public returns (bool) {
-        require(msg.sender == _owner, "Only the owner of the token can send tokens to the multisig wallet");
-        super.transfer(wallet, amount);
-        _multiSigWallet.confirmTransaction(address(this), wallet, amount);
-        return true;
+    function confirmTransaction(bytes32 transactionHash) public onlySigner {
+        confirmations[msg.sender][transactionHash] = true;
     }
 
-    function getMultiSigWalletAddress() public view returns (address) {
-        return address(_multiSigWallet);
+    function executeTokenTransfer(address _tokenAddress, address _to, uint256 _amount, bytes32 transactionHash) public {
+        uint256 signCount = 0;
+        for (uint i = 0; i < signers.length; i++) {
+            if (confirmations[signers[i]][transactionHash]) {
+                signCount++;
+            }
+        }
+        require(signCount >= requiredSignatures, "Insufficient signatures");
+
+        IERC20 token = IERC20(_tokenAddress);
+        require(token.transfer(_to, _amount), "Transfer failed");
     }
 }
