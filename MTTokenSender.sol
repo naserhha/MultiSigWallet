@@ -1,20 +1,27 @@
-pragma solidity >=0.4.22 <0.9.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-import "./MTToken.sol";
-import "./MultiSigWallet.sol";
+interface IERC20 {
+    function transfer(address recipient, uint256 amount) external returns (bool);
+}
 
 contract MTTokenSender {
-    MTToken public token;
-    MultiSigWallet public wallet;
+    address public owner;
 
-    constructor(address _token, address _wallet) {
-        token = MTToken(_token);
-        wallet = MultiSigWallet(_wallet);
+    // Modifier برای اطمینان از اینکه تنها مالک قادر به ارسال توکن‌ها است
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can send tokens");
+        _;
     }
 
-    function sendTokenToMultiSigWallet(uint256 _amount) public {
-        require(token.balanceOf(msg.sender) >= _amount, "Insufficient balance");
-        token.transferFrom(msg.sender, address(wallet), _amount);
-        wallet.submitTransaction(address(token), 0, abi.encodeWithSignature("transfer(address,uint256)", msg.sender, _amount));
+    constructor() {
+        owner = msg.sender;
+    }
+
+    // تابع ارسال توکن
+    function sendTokens(address _tokenAddress, address _to, uint256 _amount) public onlyOwner returns (bool) {
+        IERC20 token = IERC20(_tokenAddress);
+        require(token.transfer(_to, _amount), "Transfer failed");
+        return true;
     }
 }
