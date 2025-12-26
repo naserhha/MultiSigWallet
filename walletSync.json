@@ -1,35 +1,7 @@
-// Import necessary libraries
-const Web3 = require('web3');
-const WalletContract = require('./build/contracts/Wallet.json');
-const TokenContract = require('./build/contracts/Token.json');
-
-// Set up the web3 provider and instance
-const providerUrl = 'http://localhost:8545'; // Replace with your own provider URL
-const provider = new Web3.providers.HttpProvider(providerUrl);
-const web3 = new Web3(provider);
-
-// Set up the wallet contract instance
-const walletContractAddress = '0x123...'; // Replace with your own wallet contract address
-const walletContract = new web3.eth.Contract(WalletContract.abi, walletContractAddress);
-
-// Set up the token contract instance
-const tokenContractAddress = '0x456...'; // Replace with your own token contract address
-const tokenContract = new web3.eth.Contract(TokenContract.abi, tokenContractAddress);
-
-// Connect the two contracts by calling the addTokenContract function in the wallet contract
-const addTokenContract = async () => {
-  try {
-    // Get the accounts from the web3 instance
-    const accounts = await web3.eth.getAccounts();
-    const owner = accounts[0]; // Replace with the owner's address
-
-    // Add the token contract to the wallet contract
-    const tx = await walletContract.methods.addTokenContract(tokenContractAddress, 'Token Wallet').send({from: owner});
-    console.log('Token contract added to wallet contract. Transaction hash:', tx.transactionHash);
-  } catch (error) {
-    console.error('Error adding token contract to wallet contract:', error);
-  }
-};
-
-// Call the addTokenContract function to connect the two contracts
-addTokenContract();
+{
+    "network": "Rinkeby",
+    "tokenAddress": "0xYourTokenAddress",
+    "walletAddress": "0xYourWalletAddress",
+    "contractAddress": "0xYourContractAddress",
+    "lastSynced": "2025-12-26T00:00:00Z"
+}
