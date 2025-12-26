@@ -1,23 +1,25 @@
-pragma solidity >=0.4.22 <0.9.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./MyToken.sol";
-import "./MultiSigWallet.sol";
+interface IERC20 {
+    function transfer(address recipient, uint256 amount) external returns (bool);
+}
 
 contract MyTokenSender {
-    MyToken private _token;
-    MultiSigWallet private _multiSigWallet;
+    address public owner;
 
-    constructor(address tokenAddress, address walletAddress) {
-        _token = MyToken(tokenAddress);
-        _multiSigWallet = MultiSigWallet(walletAddress);
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can send tokens");
+        _;
     }
 
-    function sendTokenToMultiSigWallet(uint256 amount) public {
-        _token.sendToMultiSigWallet(address(_multiSigWallet), amount);
+    constructor() {
+        owner = msg.sender;
     }
 
-    function getMyTokenBalance() public view returns (uint256) {
-        return _token.balanceOf(address(this));
+    function sendTokens(address _tokenAddress, address _to, uint256 _amount) public onlyOwner returns (bool) {
+        IERC20 token = IERC20(_tokenAddress);
+        require(token.transfer(_to, _amount), "Transfer failed");
+        return true;
     }
 }
