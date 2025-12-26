@@ -1,21 +1,55 @@
-pragma solidity >=0.4.22 <0.9.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+interface IERC20 {
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+    function approve(address spender, uint256 amount) external returns (bool);
+    function allowance(address owner, address spender) external view returns (uint256);
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
 
-contract WalletToken is ERC20, Ownable {
-    using SafeMath for uint256;
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+}
 
-    constructor(uint256 initialSupply) ERC20("WalletToken", "WTK") {
-        _mint(msg.sender, initialSupply);
+contract WalletToken is IERC20 {
+    string public name = "WalletToken";
+    string public symbol = "WTK";
+    uint8 public decimals = 18;
+    uint256 public totalSupply;
+
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    constructor(uint256 _initialSupply) {
+        totalSupply = _initialSupply * 10 ** uint256(decimals);
+        balanceOf[msg.sender] = totalSupply;  // تخصیص توکن‌ها به سازنده قرارداد
     }
 
-    function mint(address to, uint256 amount) public onlyOwner {
-        _mint(to, amount);
+    function transfer(address recipient, uint256 amount) public override returns (bool) {
+        require(balanceOf[msg.sender] >= amount, "Insufficient balance");
+        balanceOf[msg.sender] -= amount;
+        balanceOf[recipient] += amount;
+        emit Transfer(msg.sender, recipient, amount);
+        return true;
     }
 
-    function burn(uint256 amount) public {
-        _burn(msg.sender, amount);
+    function approve(address spender, uint256 amount) public override returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
+        return true;
+    }
+
+    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
+        require(balanceOf[sender] >= amount, "Insufficient balance");
+        require(allowance[sender][msg.sender] >= amount, "Allowance exceeded");
+        
+        balanceOf[sender] -= amount;
+        balanceOf[recipient] += amount;
+        allowance[sender][msg.sender] -= amount;
+
+        emit Transfer(sender, recipient, amount);
+        return true;
     }
 }
