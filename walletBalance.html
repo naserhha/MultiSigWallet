@@ -1,93 +1,51 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<title>Wallet Balance</title>
-    <style>
-		table {
-			font-family: arial, sans-serif;
-			border-collapse: collapse;
-			width: 100%;
-			margin-top: 20px;
-		}
-
-		td, th {
-			border: 1px solid #dddddd;
-			text-align: center;
-			padding: 8px;
-		}
-
-		tr:nth-child(even) {
-			background-color: #dddddd;
-		}
-
-		.wallet-info {
-			margin-top: 20px;
-			font-size: 18px;
-		}
-
-		.transactions {
-			margin-top: 20px;
-		}
-
-		.transaction-heading {
-			font-size: 20px;
-			font-weight: bold;
-			margin-bottom: 10px;
-		}
-	</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Balance</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
 </head>
 <body>
-	<!-- Main content section -->
-	<main>
-		<!-- Wallet balance section -->
-		<section>
-			<h2>Current Wallet Balance</h2>
-			<p>$10,000</p>
-		</section>
+    <h1>Wallet Balance</h1>
+    <div id="balance"></div>
 
-		<!-- Transactions history section -->
-		<section>
-			<h2>Transactions History</h2>
-			<table>
-				<thead>
-					<tr>
-						<th>Date</th>
-						<th>Transaction Type</th>
-						<th>Amount</th>
-						<th>Sender</th>
-						<th>Recipient</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>2/23/2023</td>
-						<td>Deposit</td>
-						<td>$5,000</td>
-						<td>N/A</td>
-						<td>John Doe</td>
-					</tr>
-					<tr>
-						<td>2/24/2023</td>
-						<td>Withdrawal</td>
-						<td>$2,500</td>
-						<td>John Doe</td>
-						<td>N/A</td>
-					</tr>
-					<tr>
-						<td>2/24/2023</td>
-						<td>Transfer</td>
-						<td>$1,000</td>
-						<td>John Doe</td>
-						<td>Jane Doe</td>
-					</tr>
-				</tbody>
-			</table>
-		</section>
-	</main>
+    <script>
+        if (typeof window.ethereum !== 'undefined') {
+            const web3 = new Web3(window.ethereum);
+            let userAddress;
 
-	<!-- Footer section -->
-	<footer>
-		<p>&copy; 2023 Wallet Balance</p>
-	</footer>
+            // درخواست اتصال به MetaMask
+            async function connectWallet() {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                userAddress = accounts[0];
+                console.log('Connected wallet address:', userAddress);
+                getBalance(userAddress);
+            }
+
+            // تابع برای دریافت موجودی توکن ERC-20
+            async function getBalance(address) {
+                const tokenAddress = '0xYourTokenAddress'; // آدرس قرارداد توکن
+                const abi = [
+                    {
+                        "constant": true,
+                        "inputs": [{"name": "_owner", "type": "address"}],
+                        "name": "balanceOf",
+                        "outputs": [{"name": "balance", "type": "uint256"}],
+                        "payable": false,
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ];
+                const contract = new web3.eth.Contract(abi, tokenAddress);
+                const balance = await contract.methods.balanceOf(address).call();
+                document.getElementById('balance').innerText = `Balance: ${web3.utils.fromWei(balance)} Tokens`;
+            }
+
+            connectWallet();
+        } else {
+            alert('Please install MetaMask!');
+        }
+    </script>
 </body>
 </html>
