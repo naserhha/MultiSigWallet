@@ -1,71 +1,90 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Multi-Signature Wallet</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-  </head>
-  <body>
-    <div class="container">
-      <h1 class="text-center">Multi-Signature Wallet</h1>
-      <hr>
-      <form>
-        <div class="form-group">
-          <label for="wallet-address">Wallet Address:</label>
-          <input type="text" class="form-control" id="wallet-address" placeholder="Enter wallet address">
-        </div>
-        <div class="form-group">
-          <label for="signers">Authorized Signers:</label>
-          <select multiple class="form-control" id="signers">
-          </select>
-        </div>
-        <div class="form-group">
-          <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#add-member-modal">
-            Add/Remove Wallet Members
-          </button>
-        </div>
-        <hr>
-        <h3>Transaction History</h3>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Transaction Hash</th>
-              <th>From</th>
-              <th>To</th>
-              <th>Amount (ETH)</th>
-              <th>Timestamp</th>
-            </tr>
-          </thead>
-          <tbody id="transaction-history">
-          </tbody>
-        </table>
-      </form>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Page</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+</head>
+<body>
+    <h1>Wallet Page</h1>
+
+    <div id="walletDetails">
+        <p>Address: <span id="walletAddress"></span></p>
+        <p>Balance: <span id="walletBalance"></span></p>
     </div>
-    
-    <!-- Add/Remove Members Modal -->
-    <div class="modal fade" id="add-member-modal" tabindex="-1" role="dialog" aria-labelledby="add-member-modal-title" aria-hidden="true">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="add-member-modal-title">Add/Remove Wallet Members</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <div class="form-group">
-              <label for="new-member-address">New Member Address:</label>
-              <input type="text" class="form-control" id="new-member-address" placeholder="Enter Ethereum address">
-            </div>
-            <div class="form-group">
-              <button type="button" class="btn btn-primary" id="add-member-btn">Add Member</button>
-              <button type="button" class="btn btn-danger" id="remove-member-btn">Remove Selected Member</button>
-            </div>
-            <div class="form-group">
-              <label for="authorized-signers-list">Authorized Signers:</label>
-              <select multiple class="form-control" id="authorized-signers-list">
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-    </
+
+    <h3>Send Tokens</h3>
+    <form id="sendForm">
+        <label for="recipient">Recipient Address:</label>
+        <input type="text" id="recipient" required>
+        <label for="amount">Amount:</label>
+        <input type="number" id="amount" required>
+        <button type="submit">Send</button>
+    </form>
+
+    <script>
+        if (typeof window.ethereum !== 'undefined') {
+            const web3 = new Web3(window.ethereum);
+            let userAddress;
+
+            async function connectWallet() {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                userAddress = accounts[0];
+                document.getElementById('walletAddress').innerText = userAddress;
+                getBalance(userAddress);
+            }
+
+            async function getBalance(address) {
+                const tokenAddress = '0xYourTokenAddress'; // آدرس قرارداد توکن
+                const abi = [
+                    {
+                        "constant": true,
+                        "inputs": [{"name": "_owner", "type": "address"}],
+                        "name": "balanceOf",
+                        "outputs": [{"name": "balance", "type": "uint256"}],
+                        "payable": false,
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ];
+                const contract = new web3.eth.Contract(abi, tokenAddress);
+                const balance = await contract.methods.balanceOf(address).call();
+                document.getElementById('walletBalance').innerText = `${web3.utils.fromWei(balance)} Tokens`;
+            }
+
+            document.getElementById('sendForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const recipient = document.getElementById('recipient').value;
+                const amount = web3.utils.toWei(document.getElementById('amount').value, 'ether');
+
+                const tokenAddress = '0xYourTokenAddress'; // آدرس قرارداد توکن
+                const abi = [
+                    {
+                        "constant": false,
+                        "inputs": [{"name": "recipient", "type": "address"}, {"name": "amount", "type": "uint256"}],
+                        "name": "transfer",
+                        "outputs": [{"name": "", "type": "bool"}],
+                        "payable": false,
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    }
+                ];
+                const contract = new web3.eth.Contract(abi, tokenAddress);
+
+                try {
+                    await contract.methods.transfer(recipient, amount).send({ from: userAddress });
+                    alert('Transfer successful');
+                } catch (error) {
+                    console.error(error);
+                    alert('Transfer failed');
+                }
+            });
+
+            connectWallet();
+        } else {
+            alert('Please install MetaMask!');
+        }
+    </script>
+</body>
+</html>
